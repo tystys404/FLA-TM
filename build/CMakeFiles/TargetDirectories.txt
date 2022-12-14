@@ -1,0 +1,3 @@
+/home/njucs/FLA22proj工程框架/build/CMakeFiles/turing.dir
+/home/njucs/FLA22proj工程框架/build/CMakeFiles/edit_cache.dir
+/home/njucs/FLA22proj工程框架/build/CMakeFiles/rebuild_cache.dir
