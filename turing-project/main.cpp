@@ -6,54 +6,50 @@
 using namespace std;
 int main(int argc, char *argv[])
 {
-  string HelpMsg = "usage: turing [-v|--verbose] [-h|--help] <tm> <input>";
   bool verbose = false;
-  string tm_def_path = "";
+  string HelpMsg = "turing <tm> <input>\nuse [-v|--verbose] to aactivate verbose mode";
+  string tm_path = "";
   string input = "";
   if (argc == 1)
   {
-    std::cout << HelpMsg << std::endl;
+    cout << HelpMsg << endl;
     return 0;
   }
   else
   {
     for (int i = 1; i < argc; i++)
     {
-      string arg = argv[i];
-      if (arg == "-v" || arg == "--verbose")
+      string tmp = argv[i];
+      if (tmp == "-v" || tmp == "--verbose")
       {
-        // verbose mode
         verbose = true;
       }
-      else if (arg == "-h" || arg == "--help")
+      else if (tmp == "-h" || tmp == "--help")
       {
         cout << HelpMsg << endl;
         return 0;
       }
       else
       {
-        // tm definition file
-        if (tm_def_path == "")
+        if (tm_path == "")
         {
-          tm_def_path = arg;
+          tm_path = tmp;
         }
-        // tm input string
         else
         {
-          input = arg;
+          input = tmp;
         }
       }
     }
   }
 
-  if (tm_def_path == "" || input == "")
+  if (tm_path == "" || input == "")
   {
-    std::cerr << "Error: no tm def file at" << tm_def_path << "or empty input"
-              << std::endl;
+    cerr << "Error: no tm def file at" << tm_path << "or empty input"<< endl;
     return 0;
   }
 
-  TuringMachine tm = TuringMachine(tm_def_path, verbose);
+  TuringMachine tm = TuringMachine(tm_path, verbose);
   tm.run(input);
   return 0;
 }

@@ -2,65 +2,47 @@
 #include <set>
 #include <string>
 #include <vector>
-
+#include <algorithm>
+#include <stdlib.h>
 using namespace std;
 
-typedef struct {
-  int index;
-  char symbol;
-} tapeCell;
-
-class TuringMachine {
- public:
-  TuringMachine(string &TMDef, bool verbose) {
+class TuringMachine
+{
+public:
+  int totalstep = 0;
+  TuringMachine(string &tm_def_path, bool verbose)
+  {
     this->verbose = verbose;
-    init_tm(TMDef);
+    init_tm(tm_def_path);
   }
 
   int run(string &input);
-  void displayTMDef();
-  void handleerr(string msg,int line_num,string tmp_line);
-  void handleerr1(string msg,vector<string> item);
+  void handleerr(string msg, int line_num, string tmp_line);
+  void handleerr1(string msg, vector<string> item);
   void printerr(string err_in);
-  void printerrdetail(string err_input,string blk,char c);
   void printend();
 
- private:
   bool verbose;
-  // TM symbols
   set<string> states;
-  set<char> inputSymbols;
-  set<string> tapeSymbols;
+  set<char> input_alphbet;
+  set<string> tape_alphabet;
   string startState;
   char blankSymbol;
   set<string> finalStates;
-  int numOfTapes;
-  // TODO: transition function
-  map<vector<string>, vector<string>>
-      transitionFunction;  // state + input : next Symbol + direction + next
-                           // state
+  int tape_num;
+  map<vector<string>, vector<string>> transitions;
 
-  // TM status
-  vector<vector<char>> tape;  // index + symbol
-  vector<int> tapeHead;
+  vector<vector<char>> tape;
+  vector<int> tape_heads;
   string curState;
-  vector<int> initHead; // use to get index of tape
+  vector<int> init_heads;
 
-  // Functions
-  int init_tm(string &TMDef);
-  int init_delta(string &deltaDef);
+  int init_tm(string &tm_def_path);
+  int init_delta(string &delta_def_path);
 
-  int globalStep = 0;
-  int singalStep();
-  int checkInput(string &input);
+  bool checkInput(string &input);
   int init_tape(string &input);
-  vector<string> getNextEnv(const vector<string> keys);
-
-  // Verbose visualization
-  void stepDisplay();
+  int onestep();
+  void showstep();
 };
-
-
-// ======= Helper Functions ========
-
 set<string> split(string &str, char delim);

@@ -7,14 +7,14 @@
 #include <string.h>
 using namespace std;
 const vector<string> badlabels = {" ", "\t\n", ",", ";", "{", "}", "*", "_"};
-void TuringMachine::handleerr(string msg, int line_num, string tmp_line)
+void TuringMachine::handleerr(string msg, int line_num, string cur_line)
 {
   cerr << msg << endl;
 
   if (this->verbose)
   {
-    std::cerr << "Error: syntax error at line: " << line_num << std::endl;
-    std::cerr << "In line: " << tmp_line << endl;
+    cerr << "Error: syntax error at line: " << line_num << endl;
+    cerr << "In line: " << cur_line << endl;
   }
   exit(-1);
 }
@@ -31,21 +31,20 @@ void TuringMachine::handleerr1(string msg, vector<string> items)
     cerr << endl;
   }
 }
-set<string> split(string &str, char delimiter)
+set<string> split(string &str, char delim)
 {
-  set<string> result;
-  str += delimiter;
+  set<string> ans;
+  str += delim;
   string tmp;
   int flag = 0;
   while (str.length() > 0)
   {
-    tmp = str.substr(flag, str.find(delimiter));
-    // cout<<tmp<<" ";
-    result.insert(tmp);
+    tmp = str.substr(flag, str.find(delim));
+    ans.insert(tmp);
     str.erase(0, tmp.length() + 1);
   }
   // cout<<endl;
-  return result;
+  return ans;
 }
 void TuringMachine::printerr(string err_in)
 {
@@ -55,255 +54,200 @@ void TuringMachine::printerr(string err_in)
     cerr << "==================== ERR ====================" << endl;
   }
 }
-void TuringMachine::printerrdetail(string err_input, string blk, char c)
-{
-  if (this->verbose)
-  {
-    cerr << "error: '" << c
-         << "' was not declared in the set of input symbols" << endl;
-    cerr << "Input: " << err_input << endl;
-    cerr << blk << endl;
-  }
-}
 void TuringMachine::printend()
 {
-  if(this->verbose)
+  if (this->verbose)
   {
     cerr << "==================== END ====================" << endl;
   }
 }
-vector<int> getBound(const vector<char> tape, const int head,
-                     const char blank)
-{
-  int lBound = 0;
-  int rBound = tape.size() - 1;
-
-  for (; lBound < tape.size() && tape[lBound] == blank && lBound < head;
-       lBound++)
-    ;
-  for (; rBound >= 0 && tape[rBound] == blank && rBound > head; rBound--)
-    ;
-
-  vector<int> res = {lBound, rBound};
-  return res;
-}
-int TuringMachine::init_tm(string &TMDef)
+int TuringMachine::init_tm(string &tm_def_path)
 {
   ifstream tm_def;
-  tm_def.open(TMDef);
+  tm_def.open(tm_def_path);
   if (!tm_def.is_open())
   {
-    std::cerr << "No such file or directory:" << TMDef << std::endl;
+    cerr << "No such file or directory:" << tm_def_path << endl;
     return -1;
   }
 
-  string tmp_line;
-  string erro_msg;
+  string cur_line;
+  string error_msg;
   int line_num = 0;
-  while (getline(tm_def, tmp_line))
+  while (getline(tm_def, cur_line))
   {
-    line_num++;
     string ans;
-    ans = tmp_line.substr(0, tmp_line.find(';'));
+    line_num++;
+    ans = cur_line.substr(0, cur_line.find(';'));
     auto end = ans.find_last_not_of(" \n\r\t");
     if (end == string::npos)
-      tmp_line = "";
+      cur_line = "";
     else
-      tmp_line = tmp_line.substr(0, end + 1);
-    if (tmp_line.length() < 1)
+      cur_line = cur_line.substr(0, end + 1);
+    if (cur_line.length() < 1)
     {
       continue;
     }
 
-    if (tmp_line.find('#', 0) == 0)
+    if (cur_line.find('#', 0) == 0)
     {
-      switch (tmp_line[1])
+      if (cur_line[1] == 'Q')
       {
-      case 'Q':
-      {
-        size_t lBrack = tmp_line.find('{');
-        size_t rBrack = tmp_line.find('}');
-        if (lBrack == string::npos || rBrack == string::npos)
+        auto left_brack = cur_line.find('{');
+        auto right_brack = cur_line.find('}');
+        if (left_brack == string::npos || right_brack == string::npos)
         {
-          erro_msg = "Q not including by { }";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "Q not including by { }";
+          handleerr(error_msg, line_num, cur_line);
         }
-        tmp_line = tmp_line.substr(lBrack + 1, rBrack - lBrack - 1);
-        if (tmp_line.find(' ') != string::npos)
+        cur_line = cur_line.substr(left_brack + 1, right_brack - left_brack - 1);
+        if (cur_line.find(' ') != string::npos)
         {
-          erro_msg = "whitespace in Q def";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "whitespace in Q def";
+          handleerr(error_msg, line_num, cur_line);
         }
-        // cout << tmp_line << endl;
+        // cout << cur_line << endl;
 
-        this->states = split(tmp_line, ',');
+        this->states = split(cur_line, ',');
       }
-      break;
-
-      case 'S':
+      else if (cur_line[1] == 'S')
       {
-        size_t lBrack = tmp_line.find('{');
-        size_t rBrack = tmp_line.find('}');
-        if (lBrack == string::npos || rBrack == string::npos)
+        auto left_brack = cur_line.find('{');
+        auto right_brack = cur_line.find('}');
+        if (left_brack == string::npos || right_brack == string::npos)
         {
-          erro_msg = "S not included by { }";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "S not included by { }";
+          handleerr(error_msg, line_num, cur_line);
         }
-        tmp_line = tmp_line.substr(lBrack + 1, rBrack - lBrack - 1);
-
-        set<string> tmp_set = split(tmp_line, ',');
+        cur_line = cur_line.substr(left_brack + 1, right_brack - left_brack - 1);
+        set<string> tmp_set = split(cur_line, ',');
         for (string symbol : tmp_set)
         {
           for (string invalidStr : badlabels)
           {
-            if (tmp_line.find(invalidStr) != string::npos)
+            if (cur_line.find(invalidStr) != string::npos)
             {
-              erro_msg = "illegal str in S def: " + invalidStr;
-              handleerr(erro_msg, line_num, tmp_line);
+              error_msg = "illegal str in S def: " + invalidStr;
+              handleerr(error_msg, line_num, cur_line);
             }
           }
         }
-
         set<char> res;
         for (string i : tmp_set)
         {
           res.insert(i[0]);
         }
-
-        this->inputSymbols = res;
+        this->input_alphbet = res;
       }
-      break;
-
-      case 'G':
+      else if (cur_line[1] == 'G')
       {
-        size_t lBrack = tmp_line.find('{');
-        size_t rBrack = tmp_line.find('}');
-        if (lBrack == string::npos || rBrack == string::npos)
+        auto left_brack = cur_line.find('{');
+        auto right_brack = cur_line.find('}');
+        if (left_brack == string::npos || right_brack == string::npos)
         {
-          erro_msg = "G not included by { }";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "G not included by { }";
+          handleerr(error_msg, line_num, cur_line);
         }
-        tmp_line = tmp_line.substr(lBrack + 1, rBrack - lBrack - 1);
-        set<string> tmp_set = split(tmp_line, ',');
+        cur_line = cur_line.substr(left_brack + 1, right_brack - left_brack - 1);
+        set<string> tmp_set = split(cur_line, ',');
         for (string symbol : tmp_set)
         {
           for (string invalidStr : badlabels)
           {
-            if (tmp_line.find(invalidStr) != string::npos)
+            if (cur_line.find(invalidStr) != string::npos)
             {
-              erro_msg = "illegal str in G def: " + invalidStr;
-              handleerr(erro_msg, line_num, tmp_line);
+              error_msg = "illegal str in G def: " + invalidStr;
+              handleerr(error_msg, line_num, cur_line);
             }
           }
         }
-
-        this->tapeSymbols = tmp_set;
+        this->tape_alphabet = tmp_set;
       }
-      break;
-
-      case 'q':
+      else if (cur_line[1] == 'q')
       {
-        if (tmp_line[2] != '0' || tmp_line.substr(3, 3) != " = ")
+        if (cur_line[2] != '0' || cur_line.substr(3, 3) != " = ")
         {
-          erro_msg = "Syntex Error: Illegal def of state state";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "Syntex Error: Illegal def of state state";
+          handleerr(error_msg, line_num, cur_line);
         }
-
-        string q0(tmp_line, 6, tmp_line.length() - 5);
+        string q0(cur_line, 6, cur_line.length() - 5);
         this->startState = q0;
       }
-      break;
-
-      case 'B':
+      else if (cur_line[1] == 'B')
       {
-        if (tmp_line.substr(2, 3) != " = ")
+        if (cur_line.substr(2, 3) != " = ")
         {
-          erro_msg = "Syntex Error: Illegal def of blank state" +
-                     tmp_line.substr(3, 3);
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "Syntex Error: Illegal def of blank state" +
+                      cur_line.substr(3, 3);
+          handleerr(error_msg, line_num, cur_line);
         }
-        // string blank(tmp_line, 5, 1);
-        this->blankSymbol = tmp_line[5];
+        char blank_s = cur_line[5];
+        this->blankSymbol = blank_s;
       }
-      break;
-
-      case 'F':
+      else if (cur_line[1] == 'F')
       {
-        size_t lBrack = tmp_line.find('{');
-        size_t rBrack = tmp_line.find('}');
-        if (lBrack == string::npos || rBrack == string::npos)
+        auto left_brack = cur_line.find('{');
+        auto right_brack = cur_line.find('}');
+        if (left_brack == string::npos || right_brack == string::npos)
         {
-          erro_msg = "Final set should included by { }";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "Final set should included by { }";
+          handleerr(error_msg, line_num, cur_line);
         }
-        tmp_line = tmp_line.substr(lBrack + 1, rBrack - lBrack - 1);
-        if (tmp_line.find(' ') != string::npos)
+        cur_line = cur_line.substr(left_brack + 1, right_brack - left_brack - 1);
+        if (cur_line.find(' ') != string::npos)
         {
-          erro_msg = "whitespace in Final set def";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "whitespace in Final set def";
+          handleerr(error_msg, line_num, cur_line);
         }
-
-        set<string> tmp_set = split(tmp_line, ',');
-
+        set<string> tmp_set = split(cur_line, ',');
         for (string state : tmp_set)
         {
           if (this->states.find(state) == this->states.end())
           {
-            erro_msg = "illegal state in Final states set: " + state;
-            handleerr(erro_msg, line_num, tmp_line);
+            error_msg = "illegal state in Final states set: " + state;
+            handleerr(error_msg, line_num, cur_line);
           }
         }
-
         this->finalStates = tmp_set;
       }
-      break;
-
-      case 'N':
+      else if (cur_line[1] == 'N')
       {
-        if (tmp_line.substr(2, 3) != " = ")
+        if (cur_line.substr(2, 3) != " = ")
         {
-          erro_msg = "Syntex Error: illegal in tape Num def";
-          handleerr(erro_msg, line_num, tmp_line);
+          error_msg = "Syntex Error: illegal in tape Num def";
+          handleerr(error_msg, line_num, cur_line);
         }
-
-        // tmp_line = tmp_line[5];
-        // this->numOfTapes = stoi(tmp_line);
-        string cur = tmp_line.substr(5);
-        this->numOfTapes = stoi(cur);
+        string cur = cur_line.substr(5);
+        this->tape_num = stoi(cur);
       }
-      break;
-
-      default:
-        erro_msg = "Syntex Error: Undefined symbol type start with #";
-        handleerr(erro_msg, line_num, tmp_line);
+      else
+      {
+        error_msg = "Syntex Error: Undefined symbol type start with #";
+        handleerr(error_msg, line_num, cur_line);
       }
     }
     else
-    { // transition
-      int ret_code = init_delta(tmp_line);
-      if (ret_code != 0)
+    {
+      int run_flag = init_delta(cur_line);
+      if (run_flag != 0)
       {
-        erro_msg = "Running Error: transition function def";
-        handleerr(erro_msg, line_num, tmp_line);
+        error_msg = "Running Error: transition function def";
+        handleerr(error_msg, line_num, cur_line);
       }
     }
   }
-
-  for (int i = 0; i < this->numOfTapes; i++)
+  for (int i = 0; i < this->tape_num; i++)
   {
     vector<char> tmp_tape;
     tmp_tape.push_back(this->blankSymbol);
-
+    this->init_heads.push_back(0);
+    this->tape_heads.push_back(0);
     this->tape.push_back(tmp_tape);
-    this->tapeHead.push_back(0);
-    this->initHead.push_back(0);
   }
+  this->totalstep = 0;
   this->curState = this->startState;
-  this->globalStep = 0;
-
   return 0;
 }
-
 int TuringMachine::init_delta(string &trans_def)
 {
   vector<string> items;
@@ -312,15 +256,15 @@ int TuringMachine::init_delta(string &trans_def)
   {
     string tmp = trans_def.substr(0, trans_def.find(' '));
     items.push_back(tmp);
-    trans_def.erase(0, tmp.length() + 1);
+    trans_def = trans_def.substr(tmp.length() + 1);
   }
   vector<string> keys;
   vector<string> vals;
-  string erro_msg = "Syntex Error: [Transition] ";
+  string error_msg = "Syntex Error: [Transition] ";
   if (items.size() != 5)
   {
-    erro_msg += "items size not equal to 5, get" + items.size();
-    handleerr1(erro_msg, items);
+    error_msg += "one line size less than 5";
+    handleerr1(error_msg, items);
     return -1;
   }
   for (int idx = 0; idx < 5; idx++)
@@ -328,13 +272,13 @@ int TuringMachine::init_delta(string &trans_def)
     string item = items[idx];
     if (1 <= idx && idx <= 3)
     {
-      if (item.length() != this->numOfTapes)
+      if (item.length() != this->tape_num)
       {
-        erro_msg += "not equal to tape num\n";
-        erro_msg += "expect: " + to_string(this->numOfTapes) +
-                    " get: " + to_string(item.length());
-        erro_msg += "[" + item + "]";
-        handleerr1(erro_msg, items);
+        error_msg += "not equal to tape num\n";
+        error_msg += "expect: " + to_string(this->tape_num) +
+                     " get: " + to_string(item.length());
+        error_msg += "[" + item + "]";
+        handleerr1(error_msg, items);
         return -1;
       }
     }
@@ -342,8 +286,8 @@ int TuringMachine::init_delta(string &trans_def)
     {
       if (this->states.find(item) == this->states.end())
       {
-        erro_msg += "illegal TM state [" + item + "]";
-        handleerr1(erro_msg, items);
+        error_msg += "illegal TM state [" + item + "]";
+        handleerr1(error_msg, items);
         return -1;
       }
     }
@@ -357,128 +301,80 @@ int TuringMachine::init_delta(string &trans_def)
       vals.push_back(item);
     }
   }
-  this->transitionFunction[keys] = vals;
+  this->transitions[keys] = vals;
   return 0;
 }
-
-void TuringMachine::displayTMDef()
-{
-  vector<set<string>> items = {this->states, this->tapeSymbols,
-                               this->finalStates};
-  vector<string> names = {"states", "tapeSymbol", "finalStates"};
-  for (int idx = 0; idx < 3; idx++)
-  {
-    cout << names[idx] << " : " << endl;
-    for (string item : items[idx])
-    {
-      cout << item << ' ';
-    }
-    cout << endl;
-  }
-
-  cout << "Input Symbols: ";
-  for (char ch : this->inputSymbols)
-  {
-    cout << ch << ' ';
-  }
-  cout << endl;
-
-  cout << "startState: " << this->startState << endl;
-  cout << "blankSymbol: " << this->blankSymbol << endl;
-  cout << "tape num: " << this->numOfTapes << endl;
-
-  vector<string> keys;
-  vector<string> vals;
-  for (auto const &m : this->transitionFunction)
-  {
-    keys = m.first;
-    vals = m.second;
-    for (string i : keys)
-    {
-      cout << i << ' ';
-    }
-    for (string i : vals)
-    {
-      cout << i << ' ';
-    }
-    cout << endl;
-  }
-}
-
 int TuringMachine::run(string &input)
 {
-  /*
-   * Run TM on given input string
-   */
-
-  if (checkInput(input) != 0)
+  if (checkInput(input) == false)
   {
     exit(-1);
   }
   init_tape(input);
-
   if (this->verbose)
   {
     cout << "Input: " << input << endl;
     cout << "==================== RUN ====================" << endl;
-    stepDisplay();
+    showstep();
   }
-
-  int ret_code = singalStep();
-  while (ret_code == 0)
+  int run_flag = onestep();
+  while (run_flag == 0)
   {
-    ret_code = singalStep();
+    run_flag = onestep();
   }
-
-  switch (ret_code)
-  {
-  case 1:
+  if (run_flag == 1)
   { // halt
     if (this->verbose)
       cout << "[Halt] Result: ";
   }
-  break;
-  case 2:
+  else if (run_flag == 2)
   { // accept
     if (this->verbose)
       cout << "[Accepted] Result: ";
   }
-  break;
-  default:
+  else
+  {
     if (this->verbose)
       cerr << "Something Error in Running" << endl;
     exit(-1);
   }
 
-  // display the item on tape[0]
-  vector<int> tmp =
-      getBound(this->tape[0], this->tapeHead[0], this->blankSymbol);
-  int l = tmp[0];
-  int r = tmp[1];
+  int l = 0;
+  int r = this->tape[0].size() - 1;
+  while (l < this->tape[0].size() && this->tape[0][l] == this->blankSymbol && l < this->tape_heads[0])
+    l++;
+  while (r >= 0 && this->tape[0][r] == this->blankSymbol && r > this->tape_heads[0])
+    r--;
+
   for (int i = l; i <= r; i++)
   {
     char c = this->tape[0][i];
     if (c != this->blankSymbol)
-      cout << c; // ignore the blank on the tape
+      cout << c;
   }
   cout << endl;
   printend();
-  return -1;
+  return 0;
 }
 
-int TuringMachine::checkInput(string &input)
+bool TuringMachine::checkInput(string &input)
 {
   for (auto i = 0; i < input.length(); i++)
   {
-    if (this->inputSymbols.find(input[i]) ==
-        this->inputSymbols.end())
-    { // not in symbol set
+    if (this->input_alphbet.find(input[i]) ==
+        this->input_alphbet.end())
+    {
       if (this->verbose)
       {
         printerr(input);
         string blk(7 + i, ' ');
-        blk += "^";
-        printerrdetail(input, blk, input[i]);
+        blk = blk + "^";
+        if (this->verbose)
+        {
+          cerr << "error: '" << input[i] << "' was not declared in the set of input symbols" << endl;
+          cerr << "Input: " << input << endl;
+          cerr << blk << endl;
+        }
         printend();
       }
       else
@@ -486,11 +382,10 @@ int TuringMachine::checkInput(string &input)
         cerr << "Input: " << input << endl;
         cerr << input[i] << " was illegal input symbol" << endl;
       }
-      return -1;
+      return false;
     }
   }
-
-  return 0;
+  return true;
 }
 
 int TuringMachine::init_tape(string &input)
@@ -504,137 +399,27 @@ int TuringMachine::init_tape(string &input)
   return 0;
 }
 
-int TuringMachine::singalStep()
+int TuringMachine::onestep()
 {
-  this->globalStep++;
+  this->totalstep++;
   string heads;
-  for (int i = 0; i < this->numOfTapes; i++)
+  for (int i = 0; i < this->tape_num; i++)
   {
-    heads += this->tape[i][this->tapeHead[i]];
+    heads += this->tape[i][this->tape_heads[i]];
   }
   vector<string> curkeys;
+  vector<string> next_env;
+  bool isMatch = false;
   curkeys.push_back(this->curState);
   curkeys.push_back(heads);
-  vector<string> nextEnv = getNextEnv(curkeys);
-  if (nextEnv.size() < 1)
-  { // halt, no next state
-    if (this->verbose)
-    {
-      stepDisplay();
-    }
-    return 1;
-  }
-
-  string nextTapeVals = nextEnv[0];
-  string nextDircts = nextEnv[1];
-  string nextState = nextEnv[2];
-  for (int tapeId = 0; tapeId < this->numOfTapes; tapeId++)
+  map<vector<string>, int> match_keys;
+  for (auto &item : this->transitions)
   {
-    if (nextTapeVals[tapeId] != '*')
+    if (item.first[0] == curkeys[0])
     {
-      this->tape[tapeId][this->tapeHead[tapeId]] = nextTapeVals[tapeId];
-    }
-
-    if (nextDircts[tapeId] == 'r')
-    {
-      this->tapeHead[tapeId] += 1;
-      if (this->tapeHead[tapeId] >= this->tape[tapeId].size())
+      for (int i = 0; i < this->tape_num; i++)
       {
-        this->tape[tapeId].push_back(this->blankSymbol);
-      }
-    }
-    else if (nextDircts[tapeId] == 'l')
-    {
-      this->tapeHead[tapeId] -= 1;
-      if (this->tapeHead[tapeId] < 0)
-      {
-        this->tapeHead[tapeId] += 1;
-        this->tape[tapeId].insert(this->tape[tapeId].begin(),
-                                  this->blankSymbol);
-        this->initHead[tapeId] += 1; // for tape index
-      }
-    }
-    else
-    {
-      continue;
-    }
-  }
-  this->curState = nextState;
-
-  if (this->finalStates.find(this->curState) != this->finalStates.end())
-  {
-    if (this->verbose)
-    {
-      stepDisplay();
-    }
-    return 2;
-  }
-
-  if (this->verbose)
-  {
-    stepDisplay();
-  }
-  return 0;
-}
-
-void TuringMachine::stepDisplay()
-{
-  cout << "Step  \t: " << this->globalStep << endl;
-  for (int tapeId = 0; tapeId < this->numOfTapes; tapeId++)
-  {
-    auto tmp =
-        getBound(this->tape[tapeId], this->tapeHead[tapeId], this->blankSymbol);
-    int lBound = tmp[0];
-    int rBound = tmp[1];
-
-    cout << "Index" << tapeId << " \t: ";
-    vector<int> alignLength;
-    for (int i = lBound; i <= rBound; i++)
-    {
-      int index = i - this->initHead[tapeId];
-      index = index >= 0 ? index : -index; // abs
-      cout << index << " ";
-      alignLength.push_back(to_string(index).length());
-    }
-    cout << endl;
-
-    cout << "Tape" << tapeId << " \t: ";
-    for (int i = lBound; i <= rBound; i++)
-    {
-      string blanks = string(alignLength[i - lBound], ' ');
-      cout << this->tape[tapeId][i] << blanks;
-    }
-    cout << endl;
-
-    cout << "Head" << tapeId << " \t: ";
-    for (int i = lBound; i < this->tapeHead[tapeId] - lBound; i++)
-    {
-      string blanks = string(alignLength[i], ' ');
-      cout << " " << blanks;
-    }
-    cout << "^" << endl;
-  }
-
-  cout << "State \t: " << this->curState << endl;
-  cout << "---------------------------------------------" << endl;
-}
-
-vector<string> TuringMachine::getNextEnv(const vector<string> keys)
-{
-  bool isMatch = false;
-  // vector<bool> matchingRes;
-  // vector<vector<string>> matchingKeys;
-  map<vector<string>, int> mathchingKeys2priority;
-
-  for (auto item : this->transitionFunction)
-  {
-    if (item.first[0] == keys[0])
-    { // same state
-      // cerr << item.first[0] << keys[0] << item.first[1] << keys[1] << endl;
-
-      for (int i = 0; i < this->numOfTapes; i++)
-      {
-        if (item.first[1][i] == keys[1][i] || item.first[1][i] == '*')
+        if (item.first[1][i] == curkeys[1][i] || item.first[1][i] == '*')
         {
           isMatch = true;
         }
@@ -644,28 +429,116 @@ vector<string> TuringMachine::getNextEnv(const vector<string> keys)
           break;
         }
       }
-      if (isMatch)
+      if (isMatch == true)
       {
-        mathchingKeys2priority[item.first] =
-            count(item.first[1].begin(), item.first[1].end(), '*');
+        match_keys[item.first] = count(item.first[1].begin(), item.first[1].end(), '*');
       }
     }
     isMatch = false;
   }
-
-  int min = this->numOfTapes + 1;
-  vector<string> finalKey;
-  for (auto item : mathchingKeys2priority)
+  int temp = this->tape_num + 1;
+  vector<string> last_key;
+  for (auto item : match_keys)
   {
-    if (item.second < min)
+    if (item.second < temp)
     {
-      min = item.second;
-      finalKey = item.first;
+      last_key = item.first;
+      temp = item.second;
     }
   }
-  if (finalKey.size() > 0)
+  if (last_key.size() > 0)
   {
-    return this->transitionFunction[finalKey];
+    next_env = this->transitions[last_key];
   }
-  return finalKey;
+  else
+    next_env = last_key;
+
+  if (next_env.size() == 0)
+  { // halt
+    if (this->verbose)
+    {
+      showstep();
+    }
+    return 1;
+  }
+  string next_tape_val = next_env[0];
+  string next_dir = next_env[1];
+  string next_state = next_env[2];
+  for (int tape_idx = 0; tape_idx < this->tape_num; tape_idx++)
+  {
+    if (next_tape_val[tape_idx] != '*')
+    {
+      this->tape[tape_idx][this->tape_heads[tape_idx]] = next_tape_val[tape_idx];
+    }
+
+    if (next_dir[tape_idx] == 'l')
+    {
+      this->tape_heads[tape_idx] -= 1;
+      if (this->tape_heads[tape_idx] < 0)
+      {
+        this->tape_heads[tape_idx] += 1;
+        this->tape[tape_idx].insert(this->tape[tape_idx].begin(), this->blankSymbol);
+        this->init_heads[tape_idx] += 1;
+      }
+    }
+    else if (next_dir[tape_idx] == 'r')
+    {
+      this->tape_heads[tape_idx] += 1;
+      if (this->tape_heads[tape_idx] >= this->tape[tape_idx].size())
+        this->tape[tape_idx].push_back(this->blankSymbol);
+    }
+    else
+      continue;
+  }
+  this->curState = next_state;
+  if (this->finalStates.find(this->curState) != this->finalStates.end())
+  {
+    if (this->verbose)
+      showstep();
+    return 2;
+  }
+  if (this->verbose)
+    showstep();
+  return 0;
+}
+
+void TuringMachine::showstep()
+{
+  cout << "Step \t: " << this->totalstep << endl;
+  for (int tape_idx = 0; tape_idx < this->tape_num; tape_idx++)
+  {
+    int l = 0;
+    int r = this->tape[0].size() - 1;
+    while (l < this->tape[0].size() && this->tape[0][l] == this->blankSymbol && l < this->tape_heads[0])
+      l++;
+    while (r >= 0 && this->tape[0][r] == this->blankSymbol && r > this->tape_heads[0])
+      r--;
+
+    cout << "Index" << tape_idx << " \t: ";
+    vector<int> formal_blank;
+    for (int i = l; i <= r; i++)
+    {
+      int index = abs(i - this->init_heads[tape_idx]);
+      cout << index << " ";
+      formal_blank.push_back(to_string(index).length());
+    }
+    cout << endl
+         << "Tape" << tape_idx << " \t: ";
+    for (int i = l; i <= r; i++)
+    {
+      string blanks = string(formal_blank[i - l], ' ');
+      cout << this->tape[tape_idx][i] << blanks;
+    }
+    cout << endl
+         << "Head" << tape_idx << " \t: ";
+    for (int i = l; i < this->tape_heads[tape_idx] - l; i++)
+    {
+      string blanks = string(formal_blank[i], ' ');
+      cout << " " << blanks;
+    }
+    cout << "^" << endl;
+  }
+
+  cout << "State \t: " << this->curState << endl;
+  cout << "---------------------------------------------" << endl;
 }
